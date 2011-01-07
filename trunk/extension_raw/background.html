@@ -1,0 +1,389 @@
+<html>
+<head>
+<script src="jquery.js"></script>
+<script>
+
+    // Variables
+    // -----------------------------------------------------------------------------------------------------------------
+    var chatWidth = 298;
+    var chatHeight = 534;
+    var chatX = 0;
+    var chatY = 0;
+    var hidden = false;
+    var initialized = false;
+    var docked = true;
+    var blockList = [];
+    var connected = false;
+    var subredditChats = {};
+    var subredditPopulations = {};
+    var popup = false;
+    var timestamp = false;
+    var fontsize = 10;
+    var ports = [];
+    var subreddits = {};
+    
+
+    // Create the port listener.
+    // -----------------------------------------------------------------------------------------------------------------
+    chrome.extension.onConnect.addListener(function(port) 
+    {
+
+        // Store the port.
+        ports.push(port)[port];
+        
+        // Listen for messages.
+        port.onMessage.addListener(function(msg)
+        {
+            
+            //console.log("From client: " + JSON.stringify(msg));
+            
+            // Set the subreddit.
+            if(msg.command == 'ready')
+            {
+                // If this subreddit does not exist, create it.
+                if(!(msg.subreddit in subreddits))
+                {
+                    subreddits[msg.subreddit] = [];
+                    if(!(msg.subreddit in subredditChats))
+                    {
+                        subredditChats[msg.subreddit] = [];
+                    }
+                }
+                // If the username has not been initialized, request it.
+                if(!initialized)
+                {
+                    port.postMessage({command: "initialize"});
+                }
+                
+                // Inform the port about our connection.
+                port.postMessage({command: "set connection", connected: connected});
+                // Inform the port about the population.
+                port.postMessage({command: "set population", population: subredditPopulations[msg.subreddit]});                
+                // Inform the port about docking.
+                port.postMessage({command: "set docked", docked: docked});
+                // Inform the port about minimization.
+                port.postMessage({command: "set hidden", hidden: hidden});
+                // Inform the port about timestamps.
+                port.postMessage({command: "set timestamp", timestamp: timestamp});
+                // Shut down the popup.
+                popup = false;
+                toAllPorts({command: "set popup", popup: popup});
+                // Inform the port about position.
+                port.postMessage({command: "set position", chatWidth: chatWidth, chatHeight: chatHeight, 
+                            chatX: chatX, chatY: chatY});
+                // Inform the port about fontsize.
+                port.postMessage({command: "set fontsize", fontsize: fontsize});
+                // Set the ports key to the subreddit, and include the port in the subreddit.
+                subreddits[msg.subreddit].push(port);
+                port.subreddit = msg.subreddit;
+                // Tell the server what room we are in.
+                ws.send(JSON.stringify({y:'u', u: msg.subreddit}));                
+            }
+
+
+            // Initialize w/ data from the first window.
+            else if(msg.command == 'initialize')
+            {
+                ws.send(JSON.stringify({y:'n', n: msg.userName}));
+                chatX = msg.chatX;
+                chatY = msg.chatY;
+                toAllPorts({command: "set position", chatWidth: chatWidth, chatHeight: chatHeight, 
+                            chatX: chatX, chatY: chatY});
+                toAllPorts({command: "set hidden", hidden: hidden});
+                toAllPorts({command: "set popup", popup: popup});
+                toAllPorts({command: "set docked", docked: docked});
+                initialized = true;                
+            }
+
+            // Reposition.
+            else if(msg.command == 'set position')
+            {
+                chatWidth = msg.chatWidth? msg.chatWidth : chatWidth;
+                chatHeight = msg.chatHeight? msg.chatHeight : chatHeight;
+                chatX = msg.chatX? msg.chatX : chatX;
+                chatY = msg.chatY? msg.chatY : chatY;
+                toAllPorts({command: "set position", chatWidth: chatWidth, chatHeight: chatHeight, 
+                            chatX: chatX, chatY: chatY});
+            }
+
+            // Tell the server we want a particular name.
+            else if(msg.command == 'set user name')
+            {
+                ws.send(JSON.stringify({y:'n', n: msg.userName}));
+            }
+            
+            // Send a chat line.
+            else if(msg.command == 'send chat')
+            {
+                if(msg.hash)
+                {
+                    ws.send(JSON.stringify({y:'c', c: msg.chat, s: port.subreddit, a: msg.hash}));
+                }
+                else
+                {
+                    ws.send(JSON.stringify({y:'c', c: msg.chat, s: port.subreddit}));
+                }
+            }
+            
+            // Send an emote.
+            else if(msg.command == 'send emote')
+            {
+                ws.send(JSON.stringify({y:'e', e: msg.emote, s: port.subreddit}));
+            }
+            
+            // Toggle hidden.
+            else if(msg.command == 'toggle hidden')
+            {
+                hidden = !hidden;
+                toAllPorts({command: "set hidden", hidden: hidden});
+            }
+            
+            // Toggle popup.
+            else if(msg.command == 'toggle popup')
+            {
+                popup = !popup;
+                toAllPorts({command: "set popup", popup: popup});
+                if(popup)
+                {
+                    ws.send(JSON.stringify({y:'t'}));
+                }
+            }
+            
+            // Toggle docking.
+            else if(msg.command == 'toggle docked')
+            {
+                docked = !docked;
+                toAllPorts({command: "set docked", docked: docked});
+            }
+
+            // Toggle timestamp.
+            else if(msg.command == 'toggle timestamp')
+            {
+                timestamp = !timestamp;
+                toAllPorts({command: "set timestamp", timestamp: timestamp});
+            }
+
+            // Handle blocking.
+            else if(msg.command == 'block')
+            {
+                blockList.push(msg.hash);
+            }
+            else if(msg.command == 'unblock')
+            {
+                blockList = [];
+            }
+            // Handle font size.
+            else if(msg.command == 'fontup')
+            {
+                fontsize = Math.min(fontsize + 1, 32);
+                toAllPorts({command: "set fontsize", fontsize: fontsize});
+                
+            }
+            else if(msg.command == 'fontdown')
+            {
+                fontsize = Math.max(fontsize - 1, 1);
+                toAllPorts({command: "set fontsize", fontsize: fontsize});
+            }
+        });
+        
+        // Deal with a port disconnection.
+        port.onDisconnect.addListener(function()
+        {
+            subreddits[port.subreddit] = $.grep(subreddits[port.subreddit], function(val){return val != port;});
+            if(subreddits[port.subreddit].length == 0)
+            {
+                ws.send(JSON.stringify({y: 'x', x: port.subreddit}));
+                delete subreddits[port.subreddit];
+            }
+            ports = $.grep(ports, function(val){return val != port;});
+        });
+
+    });        
+    
+
+    // Handle one-time requests.
+    // -----------------------------------------------------------------------------------------------------------------
+    chrome.extension.onRequest.addListener(function(request, sender, sendResponse) 
+    {
+        if (request.command == "load")
+        {
+            $.get(request.url, function(data)
+            {
+                sendResponse({content: data});
+            });
+        }
+        else
+        {
+            sendResponse({});
+        }
+    });
+
+
+    // Connect to the chattit server.
+    // -----------------------------------------------------------------------------------------------------------------
+    var ws;    
+    function connect()
+    {
+        ws = new WebSocket("__WSLOCATION__");  
+        ws.onopen = wsOnOpen;
+        ws.onclose = wsOnClose;
+        ws.onmessage = wsOnMessage;
+    }
+
+    connect();
+
+    function wsOnOpen()
+    {
+        for(var s in subreddits)
+        {
+            ws.send(JSON.stringify({y:'u', u: s}));                        
+        }
+        connected = true;
+        toAllPorts({command: "set connection", connected: true});
+        console.log("Connected.");
+    }
+
+    function wsOnClose()
+    {
+        connected = false;
+        toAllPorts({command: "set connection", connected: false});
+        console.log("Disconnected. Reconnecting...");
+        setTimeout("connect()", Math.random() * 5000);
+    }
+
+
+    // Send a message to all content pages.
+    // -----------------------------------------------------------------------------------------------------------------
+    function toAllPorts(msg)
+    {
+        for(var i = 0; i < ports.length; i++)
+        {
+            ports[i].postMessage(msg);
+        }
+    }        
+
+    // Send a message to all content pages in a subreddit.
+    // -----------------------------------------------------------------------------------------------------------------
+    function toSubreddit(subreddit, msg)
+    {
+        for(var i = 0; i < subreddits[subreddit].length; i++)
+        {
+            subreddits[subreddit][i].postMessage(msg);
+        }
+    }        
+
+    // Deal with chattit server messages.
+    // -----------------------------------------------------------------------------------------------------------------
+    function wsOnMessage(e)
+    {
+        // Parse the message.
+        var data = JSON.parse(e.data)
+        //console.log("From server: " + e.data);
+        
+        // Handle a chat-type message.    
+        if(data.y == "c")
+        {
+            // Reject if we dont have this subreddit
+            if(!(data.s in subreddits))
+            {
+                return;
+            }
+            
+            // Reject if the hash is in the blocklist.
+            if($.inArray(data.h, blockList) != -1)
+            {
+                return;
+            }
+            
+            // Update the subredditChats for the proper subreddit.
+            if(!(data.s in subredditChats))
+            {
+                subredditChats[data.s] = [];
+            }
+            
+            // Set color for pm or subreddit chat line.
+            var nameColor = "#3366FF";
+            var chatColor = "black"
+            if(data.a)
+            {
+                nameColor = "#770077";
+                chatColor = "#770077";
+                data.n = data.n + " (private)";
+            }
+
+            if('t' in data)
+            {
+                d = new Date(data.t);
+                hrs = '' + d.getHours();
+                mins = '' + d.getMinutes();
+                if(hrs.length == 1)
+                {
+                    hrs = "0" + hrs;
+                }
+                if(mins.length == 1)
+                {
+                    mins = "0" + mins;
+                }
+                toSubreddit(data.s, {command: "printf", 
+                                     text: "<span class='timestamp'>" + hrs + ":" + mins + " </span>", 
+                                     color: "black", weight: "normal"});
+            }
+            toSubreddit(data.s, {command: "printf", text: data.n + "&nbsp", color: nameColor, weight: "bold", 
+                                 click: "openUserPopup('" + data.n + "', '" + data.h + "')"});
+            toSubreddit(data.s, {command: "printf", text: data.c + "<br>", color: chatColor, weight: "normal"});
+            subredditChats[data.s].push({username: data.n, chat: data.c, hash: data.h});
+        }
+        
+        // Handle an emote.
+        else if(data.y == "e")
+        {
+            // Reject if we dont have this subreddit
+            if(!(data.s in subreddits))
+            {
+                return;
+            }
+            
+            // Reject if the hash is in the blocklist.
+            if($.inArray(data.h, blockList) != -1)
+            {
+                return;
+            }
+            toSubreddit(data.s, {command: "printf", text: data.n + " " + data.e + "<br>", color: "darkblue", 
+                                 weight: "normal", click: "openUserPopup('" + data.n + "', '" + data.h + "')"});
+        }
+        
+        //  Handle a warning-type message.
+        else if(data.y == "w")
+        {
+            toAllPorts({command: "warning", warning: data.w});
+        }
+
+        //  Handle a notification-type message.
+        else if(data.y == "f")
+        {
+            toAllPorts({command: "info", info: data.f});
+        }
+
+        //  Handle an emote message.
+        else if(data.y == "e")
+        {
+            return;
+        }
+
+        //  Handle a user-count message.
+        else if(data.y == "n")
+        {
+            subredditPopulations[data.s] = data.n;
+            toSubreddit(data.s, {command: "set population", population: data.n});
+        }
+
+        //  Handle a top ten message.
+        else if(data.y == "t")
+        {
+            toAllPorts({command: "set top ten", topten: data.t});
+        }
+    }
+
+</script>
+</head>
+</html>

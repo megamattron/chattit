@@ -1,0 +1,151 @@
+
+@font-face {
+  font-family: 'Crimson Text';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Crimson Text'), url('http://themes.googleusercontent.com/font?kit=3IFMwfRa07i-auYR-B-zNfesZW2xOQ-xsNqO47m55DA') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inconsolata';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Inconsolata'), url('http://themes.googleusercontent.com/font?kit=J_eeEGgHN8Gk3Eud0dz8jw') format('truetype');
+}
+.chattitPopupWrapper
+{
+    position: absolute;
+    right:116px;
+    top: 20px;
+    width:512px;
+    height:256px;
+    overflow: hidden;
+    padding:16px;
+    background:#eff7ff;
+    color:#000000;
+    border-radius:8px;
+    border-top-right-radius: 0px;
+    border:2px solid black;
+    z-index: 101;
+}
+
+.userPopup
+{
+    position: fixed;
+    padding: 8px;
+    border-radius:8px;
+    border:2px solid black;
+    z-index: 101;
+    background:#eff7ff;
+    text-align:center;
+}    
+
+.userPopupMessage
+{
+    font-size: 10px;
+    outline:none;
+    border:1px solid #808080;
+    border-radius:4px;
+    resize:none;
+    height:48px;
+}
+
+.topten
+{
+    font-family: 'Inconsolata', arial, serif;
+    font-size:12px;
+}
+
+.chattitPopup
+{
+    font-family: 'Crimson Text';
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    font-size:16px;
+}
+
+.chattit
+{
+    position: fixed;
+    left:0px;
+    top: 0px;
+    bottom: 0px;
+    background:rgba(206, 227, 248, 0.9);
+    color:#000000;
+    border-radius:8px;
+    border:1px solid black;
+    z-index: 100;
+}
+
+.chat
+{
+    position: absolute;
+    right:4px;
+    top: 24px;
+    background: transparent;
+    color:#000000;
+    word-wrap: break-word;
+    overflow-y:auto;
+    overflow-x:hidden;
+    border: none;
+    height:auto;
+}
+
+.info
+{
+    position: absolute;
+    right:4px;
+    top: 4px;
+    background:transparent;
+    color:darkblue;
+    overflow:hidden;
+    font-size:15px;
+    font-weight:bold;
+    text-align:right;
+    border:none;
+}
+
+.chatarea
+{
+    position:absolute;
+    bottom: 7px;
+    right:7px;
+    height: 48px;
+    padding:4px;
+    background: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    outline:none;
+    border:1px solid #808080;
+    resize:none;
+    border-radius:4px;
+}
+
+.people
+{
+    float:left;
+}
+
+.lbutton
+{
+    float: left;
+    margin-right: 4px;
+}
+
+.rbutton
+{
+    float: right;
+    margin-left: 4px;
+}
+
+.timestamp
+{
+    font-family: 'Inconsolata', arial, serif;
+}
+
+
+
+
+
+
+
