@@ -1,0 +1,77 @@
+Each chattit message has a 'y' tag, for type.
+
+
+
+    Messages going to the client:
+    
+        'c' A chat message
+            'h'     The originating user's hash
+            'n'     The originating user's username.
+            'c'     The originating user's chat line.
+            's'     The subreddit for the chat line.
+            
+        'w' A warning to the client
+            'w'     The warning to be displayed in the chat window.
+            
+        'f' A warning to the client
+            'f'     The notification to be displayed in the chat window.
+            
+        'n' Inform the client of the number of users in the current room/shard.
+            'n'     The number of users in the current room.                                
+            's'     The subreddit for the room.
+
+        'e' Emote
+            'e'     The emote.
+            's'     The subreddit for the emote.
+            'n'     The originating user's username.
+            'h'     The originating user's hash.
+            
+        't' A list of the top ten subreddits.
+            't'     The subreddits. 't'={sr1: pop1, sr2: pop2, ...}
+
+
+    Messages going to the server:
+        
+        'c' A chat message
+            'c'     The originating user's chat line.
+            's'     The subreddit for the chat line.
+            'a'     The target recipient's hash, if this is a pm.
+            
+        'u' Subreddit entrance
+            'u'     The user's subreddit path.
+        
+        'x' Subreddit exit
+            'x'     The subreddit the user is exiting.
+            
+        'n' Request a name for the current user.
+            'n'     The requested name.
+            
+        't' Request links of the top ten pages.
+            none.
+
+        'e' Emote
+            'e'     The emote.
+            's'     The subreddit for the emote.
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            

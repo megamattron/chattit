@@ -1,0 +1,14 @@
+{
+    "name": "chattit",
+    "version": "2.2.0",
+    "description": "Provides a chat room for each reddit page.",
+    "background_page": "background.html",
+    "content_scripts": 
+    [
+        {
+            "matches": ["http://www.reddit.com/*"],
+            "css": ["chattit.css"],
+            "js": ["jquery.js", "json.js", "chattit.js"]
+        }
+    ]
+}
